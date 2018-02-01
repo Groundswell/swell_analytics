@@ -3,6 +3,7 @@ class SwellAnalyticsMigration < ActiveRecord::Migration
 
 		create_table :analytics_session do |t| # cache this model's attributes, and have it expire after session is dead for X minutes (TTL)
 			t.integer		:user_id
+			t.string		:session_uuid
 
 			t.string		:ip
 			t.string		:user_agent
@@ -38,10 +39,12 @@ class SwellAnalyticsMigration < ActiveRecord::Migration
 
 			t.timestamps
 		end
+		add_index :analytics_session, :session_uuid, unique: true
 
 		create_table :analytics_events do |t|
 			t.integer		:user_id
 			t.integer		:analytics_session_id
+			t.string		:session_uuid
 
 			# SESSION SCOPE
 			t.string		:ip
@@ -103,6 +106,7 @@ class SwellAnalyticsMigration < ActiveRecord::Migration
 
 			t.timestamps
 		end
+		add_index :analytics_events, :session_uuid
 
 	end
 end

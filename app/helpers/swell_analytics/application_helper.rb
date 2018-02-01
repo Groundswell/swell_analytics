@@ -1,11 +1,22 @@
 module SwellAnalytics
-  module ApplicationHelper
+	module ApplicationHelper
 
-	  def log_analytics_event( name, options = {} )
-		  @analytics_service ||= SwellAnalytics::AnalyticsService.new
+		def log_analytics_event( name, options = {} )
+			@analytics_service ||= SwellAnalytics::AnalyticsService.new
 
-		  @analytics_service.log_event( name, options.merge( params: params, request: request ) )
-	  end
+			session_uuid = cookies[:swasuuid] || SecureRandom.uuid
 
-  end
+			options = { params: params, request: request, session_uuid: session_uuid }.merge options
+			options[:page_name] ||= @page_meta[:title] if defined?( SwellMedia )
+			options[:data_layer] ||= @page_event_data if defined?( SwellMedia ) && @page_event_data.present?
+
+			@analytics_service.log_event( name, options )
+
+			cookies[:swasuuid] = {
+				:value => session_uuid,
+				:expires => SwellAnalytics.session_ttl.from_now
+			}
+		end
+
+	end
 end

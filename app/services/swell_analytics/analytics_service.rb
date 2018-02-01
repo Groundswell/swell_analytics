@@ -30,8 +30,8 @@ module SwellAnalytics
 
 		def save_event( name, options = {} )
 
-			analytics_session = AnalyticsSession.find( options.delete(:analytics_session_id) ) if options[:analytics_session_id].present?
-			analytics_session = AnalyticsSession.create( self.get_session_attributes( options ) )
+			analytics_session = AnalyticsSession.find_by( session_uuid: options.delete(:session_uuid) ) if options[:session_uuid].present?
+			# analytics_session = AnalyticsSession.create( self.get_session_attributes( options ) )
 
 			analytics_event = AnalyticsEvent.new( event_name: name, analytics_session: analytics_session )
 			analytics_event.attributes = get_event_attributes( options, analytics_session )
@@ -43,14 +43,22 @@ module SwellAnalytics
 		def get_event_attributes( options, analytics_session )
 			attributes = {}
 
-			SESSION_DIMENSIONS.each do |attribute_name|
-				options.delete(attribute_name.to_sym)
-				attributes[attribute_name.to_sym] = analytics_session.call(attribute_name) if analytics_session.respond_to?(attribute_name)
-			end
+			if analytics_session.present?
 
-			SESSION_METRICS.each do |attribute_name|
-				options.delete(attribute_name.to_sym)
-				attributes[attribute_name.to_sym] = analytics_session.call(attribute_name) if analytics_session.respond_to?(attribute_name)
+				SESSION_DIMENSIONS.each do |attribute_name|
+					options.delete(attribute_name.to_sym)
+					attributes[attribute_name.to_sym] = analytics_session.call(attribute_name) if analytics_session.respond_to?(attribute_name)
+				end
+
+				SESSION_METRICS.each do |attribute_name|
+					options.delete(attribute_name.to_sym)
+					attributes[attribute_name.to_sym] = analytics_session.call(attribute_name) if analytics_session.respond_to?(attribute_name)
+				end
+
+			else
+
+				attributes = get_session_attributes( options )
+
 			end
 
 			EVENT_DIMENSIONS.each do |attribute_name|
@@ -69,7 +77,7 @@ module SwellAnalytics
 			attributes
 		end
 
-		def get_session_attributes( options, analytics_session )
+		def get_session_attributes( options )
 			attributes = {}
 
 			SESSION_DIMENSIONS.each do |attribute_name|
