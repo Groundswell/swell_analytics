@@ -1,7 +1,7 @@
 class SwellAnalyticsMigration < ActiveRecord::Migration[5.1]
 	def change
 
-		create_table :analytics_session do |t| # cache this model's attributes, and have it expire after session is dead for X minutes (TTL)
+		create_table :analytics_sessions do |t| # cache this model's attributes, and have it expire after session is dead for X minutes (TTL)
 			t.integer		:user_id
 			t.string		:session_uuid
 
@@ -44,7 +44,7 @@ class SwellAnalyticsMigration < ActiveRecord::Migration[5.1]
 
 			t.timestamps
 		end
-		add_index :analytics_session, :session_uuid, unique: true
+		add_index :analytics_sessions, :session_uuid, unique: true
 
 		create_table :analytics_events do |t|
 			t.integer		:user_id
@@ -119,7 +119,7 @@ class SwellAnalyticsMigration < ActiveRecord::Migration[5.1]
 
 			t.timestamps
 		end
-		add_index :analytics_events, :session_uuid
+		add_index :analytics_events, [:session_uuid, :created_at]
 
 	end
 end
