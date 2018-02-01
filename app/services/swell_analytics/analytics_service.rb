@@ -3,7 +3,7 @@ require 'browser'
 
 module SwellAnalytics
 	class AnalyticsService
-		SESSION_DIMENSIONS	= %w(user_id ip user_agent country state city landing_page_referrer_url landing_page_url campaign_source campaign_medium campaign_term campaign_content campaign_name browser_family browser_version browser_major_version browser_minor_version operating_system_name operating_system_version operating_system_major_version operating_system_minor_version device_type device_family device_brand device_model)
+		SESSION_DIMENSIONS	= %w(user_id ip user_agent country state city landing_page_referrer_url landing_page_url campaign_source campaign_medium campaign_term campaign_content campaign_name bot_name bot_search_engine browser_family browser_version browser_major_version browser_minor_version operating_system_name operating_system_version operating_system_major_version operating_system_minor_version device_type device_family device_brand device_model)
 		SESSION_METRICS		= %w(campaign_cost)
 
 		EVENT_DIMENSIONS	= %w(event_name event_category referrer_url goal_name goal_id page_url page_host page_path page_name actor_label actor_id actor_type subject_label subject_id subject_type)
@@ -15,8 +15,6 @@ module SwellAnalytics
 			request = options.delete(:request)
 
 			options[:country] = request['CF-IPCountry'] if request.present? && request.headers['CF-IPCountry'].present?
-			# options[:state]
-			# options[:city]
 
 			if SwellAnalytics.async_event_logging
 
@@ -94,6 +92,8 @@ module SwellAnalytics
 				user_agent = UserAgentParser.parse attributes[:user_agent]
 				browser = Browser.new attributes[:user_agent]
 
+				attributes[:bot_name]						= browser.bot.name if browser.bot.present?
+				attributes[:bot_search_engine]				= browser.bot.present? && browser.bot.seach_engine?
 				attributes[:browser_family]					= user_agent.family
 				attributes[:browser_version]				= user_agent.version.to_s
 				attributes[:browser_major_version]			= user_agent.version.major

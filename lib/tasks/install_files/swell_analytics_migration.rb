@@ -21,6 +21,8 @@ class SwellAnalyticsMigration < ActiveRecord::Migration
 			t.string		:campaign_name
 			t.integer		:campaign_cost
 
+			t.string		:bot_name
+			t.boolean		:bot_search_engine
 			t.string		:browser_family
 			t.string		:browser_version
 			t.string		:browser_major_version
@@ -59,6 +61,8 @@ class SwellAnalyticsMigration < ActiveRecord::Migration
 			t.string		:campaign_name
 			t.integer		:campaign_cost
 
+			t.string		:bot_name
+			t.boolean		:bot_search_engine
 			t.string		:browser_family
 			t.string		:browser_version
 			t.string		:browser_major_version
