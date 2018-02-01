@@ -36,6 +36,26 @@ module SwellAnalytics
 			analytics_event = AnalyticsEvent.new( event_name: name, analytics_session: analytics_session )
 			analytics_event.attributes = get_event_attributes( options, analytics_session )
 
+			# should we be logging data layer events too?
+			if ( data_layer = options[:data_layer] ).present?
+
+				data_layer.each do |row|
+					row.each do |event_group,group_data|
+						group_data.each do |event_name,event_data|
+
+							event_options = options.merge( event_group: event_group )
+							event_options = event_options.merge( event_data: event_data )
+
+							analytics_event = AnalyticsEvent.new( event_name: event_name, analytics_session: analytics_session )
+							analytics_event.attributes = get_event_attributes( event_options, analytics_session )
+
+						end
+					end
+
+				end
+
+			end
+
 		end
 
 		protected
