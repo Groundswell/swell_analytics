@@ -25,14 +25,20 @@ module SwellAnalytics
 
 		def save_event( name, options = {} )
 			data_layer = options[:data_layer] || []
+			session_uuid = options.delete(:session_uuid)
 
-			if options[:session_uuid].present?
-				analytics_session = AnalyticsSession.find_by( session_uuid: options.delete(:session_uuid) )
-				analytics_session ||= AnalyticsSession.create( self.get_session_attributes( options ) )
+			if session_uuid.present?
+				# @todo cache session in memory until SwellAnalytics.session_ttl.from_now AND re-up expiration every access
+				analytics_session = AnalyticsSession.find_by( session_uuid: session_uuid )
+				analytics_session ||= AnalyticsSession.new( self.get_session_attributes( options ).merge( session_uuid: session_uuid ) )
+				analytics_session.save!
 			end
 
-			event_attributes = get_event_attributes( name, options, analytics_session )
-			analytics_event = AnalyticsEvent.create( event_attributes )
+			event_attributes = self.get_event_attributes( name, options, analytics_session )
+			# @todo cache event for SwellAnalytics.event_duplication_cooldown.from_now AND check cache to see if it's a dup before creating it.
+			return false if AnalyticsEvent.where( event_attributes ).where('created_at > ?', SwellAnalytics.event_duplication_cooldown.ago ).present?
+			analytics_event = AnalyticsEvent.new( event_attributes )
+			analytics_event.save!
 
 
 			# should we be logging data layer events too?
@@ -46,7 +52,8 @@ module SwellAnalytics
 							event_data: event_data
 						)
 
-						data_layer_analytics_event = AnalyticsEvent.create( data_layer_event_attributes )
+						data_layer_analytics_event = AnalyticsEvent.new( data_layer_event_attributes )
+						data_layer_analytics_event.save!
 
 					end
 				end
@@ -104,9 +111,6 @@ module SwellAnalytics
 				attributes[:properties][key] = value.to_json unless value.nil?
 			end
 
-			puts JSON.pretty_generate attributes
-			die()
-
 			attributes
 		end
 
@@ -152,6 +156,9 @@ module SwellAnalytics
 				attributes[:device_model]					= user_agent.device.model
 
 			end
+
+			attributes[:landing_page_referrer_url] = options[:referrer_url]
+			attributes[:landing_page_url] = options[:page_url]
 
 			if attributes[:landing_page_referrer_url].present?
 				uri = URI(attributes[:landing_page_referrer_url])

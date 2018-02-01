@@ -10,11 +10,13 @@ module SwellAnalytics
 		mattr_accessor :async_event_logging
 		mattr_accessor :event_worker_options
 		mattr_accessor :session_ttl
+		mattr_accessor :event_duplication_cooldown
 
 		self.event_worker_class_name = "SwellAnalytics::EventWorker"
 		self.async_event_logging = defined?( Sidekiq::Worker )
 		self.event_worker_options = { :queue => :medium }
 		self.session_ttl = 10.minutes
+		self.event_duplication_cooldown = 10.seconds
 
 	end
 
