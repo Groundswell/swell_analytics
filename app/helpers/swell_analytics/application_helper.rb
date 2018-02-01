@@ -11,8 +11,6 @@ module SwellAnalytics
 				user_agent: request.user_agent,
 				country: request['CF-IPCountry'],
 				ip: request.remote_ip,
-				landing_page_referrer_url: request.referer,
-				landing_page_url: request.original_url,
 				campaign_source: params[:utm_source],
 				campaign_medium: params[:utm_medium],
 				campaign_term: params[:utm_term],
