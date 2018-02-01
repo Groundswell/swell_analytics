@@ -1,4 +1,4 @@
-class SwellAnalyticsMigration < ActiveRecord::Migration
+class SwellAnalyticsMigration < ActiveRecord::Migration[5.1]
 	def change
 
 		create_table :analytics_session do |t| # cache this model's attributes, and have it expire after session is dead for X minutes (TTL)
