@@ -13,7 +13,12 @@ class SwellAnalyticsMigration < ActiveRecord::Migration[5.1]
 			t.string		:city
 
 			t.string		:landing_page_referrer_url
+			t.string		:landing_page_referrer_host
+			t.string		:landing_page_referrer_path
+
 			t.string		:landing_page_url
+			t.string		:landing_page_host
+			t.string		:landing_page_path
 
 			t.string		:campaign_source
 			t.string		:campaign_medium
@@ -55,7 +60,12 @@ class SwellAnalyticsMigration < ActiveRecord::Migration[5.1]
 			t.string		:city
 
 			t.string		:landing_page_referrer_url
+			t.string		:landing_page_referrer_host
+			t.string		:landing_page_referrer_path
+
 			t.string		:landing_page_url
+			t.string		:landing_page_host
+			t.string		:landing_page_path
 
 			t.string		:campaign_source
 			t.string		:campaign_medium
@@ -84,7 +94,10 @@ class SwellAnalyticsMigration < ActiveRecord::Migration[5.1]
 			t.string		:event_name
 			t.string		:event_category
 			t.integer		:value, default: 0
+
 			t.string		:referrer_url
+			t.string		:referrer_host
+			t.string		:referrer_path
 
 			t.string		:goal_name
 			t.string		:goal_id

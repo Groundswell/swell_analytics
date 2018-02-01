@@ -3,22 +3,17 @@ require 'browser'
 
 module SwellAnalytics
 	class AnalyticsService
-		SESSION_DIMENSIONS	= %w(user_id ip user_agent country state city landing_page_referrer_url landing_page_url campaign_source campaign_medium campaign_term campaign_content campaign_name bot_name bot_search_engine browser_family browser_version browser_major_version browser_minor_version operating_system_name operating_system_version operating_system_major_version operating_system_minor_version device_type device_family device_brand device_model)
+		SESSION_DIMENSIONS	= %w(user_id ip user_agent country state city landing_page_referrer_url landing_page_referrer_host landing_page_referrer_path landing_page_url landing_page_host landing_page_path campaign_source campaign_medium campaign_term campaign_content campaign_name bot_name bot_search_engine browser_family browser_version browser_major_version browser_minor_version operating_system_name operating_system_version operating_system_major_version operating_system_minor_version device_type device_family device_brand device_model)
 		SESSION_METRICS		= %w(campaign_cost)
 
-		EVENT_DIMENSIONS	= %w(event_name event_category referrer_url goal_name goal_id page_url page_host page_path page_name actor_label actor_id actor_type subject_label subject_id subject_type)
+		EVENT_DIMENSIONS	= %w(event_name event_category referrer_url referrer_host referrer_path goal_name goal_id page_url page_host page_path page_name actor_label actor_id actor_type subject_label subject_id subject_type)
 		EVENT_METRICS		= %w(value)
 
 		def log_event( name, options = {} )
 
-			params = options.delete(:params)
-			request = options.delete(:request)
-
-			options[:country] = request['CF-IPCountry'] if request.present? && request.headers['CF-IPCountry'].present?
-
 			if SwellAnalytics.async_event_logging
 
-				SwellAnalytics.event_worker_class_name.constantize.perform_async( args )
+				SwellAnalytics.event_worker_class_name.constantize.perform_async( name, options.to_json )
 
 			else
 
@@ -29,29 +24,31 @@ module SwellAnalytics
 		end
 
 		def save_event( name, options = {} )
+			data_layer = options[:data_layer] || []
 
-			analytics_session = AnalyticsSession.find_by( session_uuid: options.delete(:session_uuid) ) if options[:session_uuid].present?
-			# analytics_session = AnalyticsSession.create( self.get_session_attributes( options ) )
+			if options[:session_uuid].present?
+				analytics_session = AnalyticsSession.find_by( session_uuid: options.delete(:session_uuid) )
+				analytics_session ||= AnalyticsSession.create( self.get_session_attributes( options ) )
+			end
 
-			analytics_event = AnalyticsEvent.new( event_name: name, analytics_session: analytics_session )
-			analytics_event.attributes = get_event_attributes( options, analytics_session )
+			event_attributes = get_event_attributes( name, options, analytics_session )
+			analytics_event = AnalyticsEvent.create( event_attributes )
+
 
 			# should we be logging data layer events too?
-			if ( data_layer = options[:data_layer] ).present?
+			data_layer.each do |row|
+				row.each do |event_group,group_data|
+					group_data.each do |event_name,event_data|
 
-				data_layer.each do |row|
-					row.each do |event_group,group_data|
-						group_data.each do |event_name,event_data|
+						data_layer_event_attributes = event_attributes.merge(
+							event_name: name,
+							event_group: event_group,
+							event_data: event_data
+						)
 
-							event_options = options.merge( event_group: event_group )
-							event_options = event_options.merge( event_data: event_data )
+						data_layer_analytics_event = AnalyticsEvent.create( data_layer_event_attributes )
 
-							analytics_event = AnalyticsEvent.new( event_name: event_name, analytics_session: analytics_session )
-							analytics_event.attributes = get_event_attributes( event_options, analytics_session )
-
-						end
 					end
-
 				end
 
 			end
@@ -60,39 +57,55 @@ module SwellAnalytics
 
 		protected
 
-		def get_event_attributes( options, analytics_session )
-			attributes = {}
+		def get_event_attributes( name, options, analytics_session )
+			attributes = { event_name: name }
 
 			if analytics_session.present?
 
 				SESSION_DIMENSIONS.each do |attribute_name|
 					options.delete(attribute_name.to_sym)
-					attributes[attribute_name.to_sym] = analytics_session.call(attribute_name) if analytics_session.respond_to?(attribute_name)
+					attributes[attribute_name.to_sym] = analytics_session.try(attribute_name) if analytics_session.respond_to?(attribute_name)
 				end
 
 				SESSION_METRICS.each do |attribute_name|
 					options.delete(attribute_name.to_sym)
-					attributes[attribute_name.to_sym] = analytics_session.call(attribute_name) if analytics_session.respond_to?(attribute_name)
+					attributes[attribute_name.to_sym] = analytics_session.try(attribute_name) if analytics_session.respond_to?(attribute_name)
 				end
 
+				attributes[:analytics_session] = analytics_session
 			else
 
-				attributes = get_session_attributes( options )
+				attributes = attributes.merge( get_session_attributes( options ) )
 
 			end
 
 			EVENT_DIMENSIONS.each do |attribute_name|
-				attributes[attribute_name.to_sym] = options.delete( attribute_name.to_sym ) if options[attribute_name.to_sym].present?
+				attributes[attribute_name.to_sym] = options.delete( attribute_name.to_sym ) if options.has_key? attribute_name.to_sym
 			end
 
 			EVENT_METRICS.each do |attribute_name|
-				attributes[attribute_name.to_sym] = options.delete( attribute_name.to_sym ) if options[attribute_name.to_sym].present?
+				attributes[attribute_name.to_sym] = options.delete( attribute_name.to_sym ) if options.has_key? attribute_name.to_sym
+			end
+
+			if attributes[:page_url].present?
+				uri = URI(attributes[:page_url])
+				attributes[:page_host] ||= uri.host
+				attributes[:page_path] ||= ( uri.query.present? ? "#{uri.path}?#{uri.query}" : uri.path )
+			end
+
+			if attributes[:referrer_url].present?
+				uri = URI(attributes[:referrer_url])
+				attributes[:referrer_host] ||= uri.host
+				attributes[:referrer_path] ||= ( uri.query.present? ? "#{uri.path}?#{uri.query}" : uri.path )
 			end
 
 			attributes[:properties] = options || {}
 			attributes[:properties].each do |key,value|
-				attributes[:properties][key] = value.to_json
+				attributes[:properties][key] = value.to_json unless value.nil?
 			end
+
+			puts JSON.pretty_generate attributes
+			die()
 
 			attributes
 		end
@@ -101,11 +114,11 @@ module SwellAnalytics
 			attributes = {}
 
 			SESSION_DIMENSIONS.each do |attribute_name|
-				attributes[attribute_name.to_sym] = options[attribute_name.to_sym] if options[attribute_name.to_sym].present?
+				attributes[attribute_name.to_sym] = options[attribute_name.to_sym] if options.has_key? attribute_name.to_sym
 			end
 
 			SESSION_METRICS.each do |attribute_name|
-				attributes[attribute_name.to_sym] = options[attribute_name.to_sym] if options[attribute_name.to_sym].present?
+				attributes[attribute_name.to_sym] = options[attribute_name.to_sym] if options.has_key? attribute_name.to_sym
 			end
 
 
@@ -121,7 +134,7 @@ module SwellAnalytics
 				browser = Browser.new attributes[:user_agent]
 
 				attributes[:bot_name]						= browser.bot.name if browser.bot.present?
-				attributes[:bot_search_engine]				= browser.bot.present? && browser.bot.seach_engine?
+				attributes[:bot_search_engine]				= browser.bot.present? && browser.bot.search_engine?
 				attributes[:browser_family]					= user_agent.family
 				attributes[:browser_version]				= user_agent.version.to_s
 				attributes[:browser_major_version]			= user_agent.version.major
@@ -130,14 +143,26 @@ module SwellAnalytics
 				attributes[:operating_system_version]		= user_agent.os.version
 				attributes[:operating_system_major_version]	= user_agent.os.version.major
 				attributes[:operating_system_minor_version]	= user_agent.os.version.minor
-				attributes[:device_type]					= 'tablet' if browser.tablet?
-				attributes[:device_type]					= 'mobile' if browser.mobile?
-				attributes[:device_type]					= 'tv' if browser.tv?
-				attributes[:device_type]					= 'console' if browser.console?
+				attributes[:device_type]					= 'tablet' if browser.device.tablet?
+				attributes[:device_type]					= 'mobile' if browser.device.mobile?
+				attributes[:device_type]					= 'tv' if browser.device.tv?
+				attributes[:device_type]					= 'console' if browser.device.console?
 				attributes[:device_family]					= user_agent.device.family
 				attributes[:device_brand]					= user_agent.device.brand
 				attributes[:device_model]					= user_agent.device.model
 
+			end
+
+			if attributes[:landing_page_referrer_url].present?
+				uri = URI(attributes[:landing_page_referrer_url])
+				attributes[:landing_page_referrer_host] ||= uri.host
+				attributes[:landing_page_referrer_path] ||= ( uri.query.present? ? "#{uri.path}?#{uri.query}" : uri.path )
+			end
+
+			if attributes[:landing_page_url].present?
+				uri = URI(attributes[:landing_page_url])
+				attributes[:landing_page_host] ||= uri.host
+				attributes[:landing_page_path] ||= ( uri.query.present? ? "#{uri.path}?#{uri.query}" : uri.path )
 			end
 
 			attributes

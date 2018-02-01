@@ -6,7 +6,20 @@ module SwellAnalytics
 
 			session_uuid = cookies[:swasuuid] || SecureRandom.uuid
 
-			options = { params: params, request: request, session_uuid: session_uuid }.merge( options )
+			options = {
+				session_uuid: session_uuid,
+				user_agent: request.user_agent,
+				country: request['CF-IPCountry'],
+				ip: request.remote_ip,
+				landing_page_referrer_url: request.referer,
+				landing_page_url: request.original_url,
+				campaign_source: params[:utm_source],
+				campaign_medium: params[:utm_medium],
+				campaign_term: params[:utm_term],
+				campaign_content: params[:utm_content],
+				campaign_name: params[:utm_campaign],
+			}.merge( options )
+
 
 			@analytics_service.log_event( name, options )
 
