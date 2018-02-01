@@ -1,7 +1,7 @@
 class EventWorker
 	if defined?( Sidekiq::Worker )
 		include Sidekiq::Worker
-		sidekiq_options :queue => :medium
+		sidekiq_options( SwellAnalytics.event_worker_options ) if SwellAnalytics.event_worker_options.present?
 	end
 
 
