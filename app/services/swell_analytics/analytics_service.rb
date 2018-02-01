@@ -11,6 +11,13 @@ module SwellAnalytics
 
 		def log_event( name, options = {} )
 
+			params = options.delete(:params)
+			request = options.delete(:request)
+
+			options[:country] = request['CF-IPCountry'] if request.present? && request.headers['CF-IPCountry'].present?
+			# options[:state]
+			# options[:city]
+
 			if SwellAnalytics.async_event_logging
 
 				SwellAnalytics.event_worker_class_name.constantize.perform_async( args )
