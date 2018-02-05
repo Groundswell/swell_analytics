@@ -13,7 +13,7 @@ module SwellAnalytics
 
 			if SwellAnalytics.async_event_logging
 
-				SwellAnalytics.event_worker_class_name.constantize.perform_async( name, options.to_json )
+				SwellAnalytics.event_worker_class_name.constantize.prepare_and_perform_async( name, options )
 
 			else
 
@@ -66,6 +66,7 @@ module SwellAnalytics
 
 		def get_event_attributes( name, options, analytics_session )
 			attributes = { event_name: name }
+			attributes[:created_at] = options[:created_at] if options[:created_at].present?
 
 			if analytics_session.present?
 

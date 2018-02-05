@@ -7,10 +7,12 @@ module SwellAnalytics
 
 
 		def perform( name, options )
-			options = JSON.parse( options, symbolize_names: true )
 
 			# Process Event
 			begin
+
+				options = JSON.parse( options, symbolize_names: true )
+				options[:created_at] = Time.at( options[:created_at] ) if options[:created_at].present?
 
 				AnalyticsService.new.save_event( name, options )
 
@@ -24,6 +26,13 @@ module SwellAnalytics
 				end
 			end
 
+		end
+
+		def self.prepare_and_perform_async( name, options )
+			options[:created_at] ||= Time.now
+			options[:created_at] = options[:created_at].to_f
+
+			self.perform_async( name, options.to_json )
 		end
 
 	end
