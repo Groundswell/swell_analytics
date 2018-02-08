@@ -1,7 +1,3 @@
-
-require 'stripe'
-require 'tax_cloud'
-
 module SwellAnalytics
 
 
