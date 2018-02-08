@@ -9,7 +9,7 @@ module SwellAnalytics
 			options = {
 				session_uuid: session_uuid,
 				user_agent: request.user_agent,
-				country: request['CF-IPCountry'],
+				country: request.headers['CF-IPCountry'],
 				ip: request.remote_ip,
 				campaign_source: params[:utm_source],
 				campaign_medium: params[:utm_medium],
