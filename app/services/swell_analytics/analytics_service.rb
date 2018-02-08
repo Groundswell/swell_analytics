@@ -29,9 +29,13 @@ module SwellAnalytics
 
 			if session_uuid.present?
 				# @todo cache session in memory until SwellAnalytics.session_ttl.from_now AND re-up expiration every access
-				analytics_session = AnalyticsSession.find_by( session_uuid: session_uuid )
-				analytics_session ||= AnalyticsSession.new( self.get_session_attributes( options ).merge( session_uuid: session_uuid ) )
-				analytics_session.save!
+				begin
+					analytics_session = AnalyticsSession.find_by( session_uuid: session_uuid )
+					analytics_session ||= AnalyticsSession.new( self.get_session_attributes( options ).merge( session_uuid: session_uuid ) )
+					analytics_session.save!
+				rescue ActiveRecord::RecordNotUnique => e
+					analytics_session = AnalyticsSession.find_by( session_uuid: session_uuid )
+				end
 			end
 
 			event_attributes = self.get_event_attributes( name, options, analytics_session )
