@@ -146,19 +146,19 @@ module SwellAnalytics
 				attributes[:bot_search_engine]				= browser.bot.present? && browser.bot.search_engine?
 				attributes[:browser_family]					= user_agent.family
 				attributes[:browser_version]				= user_agent.version.to_s
-				attributes[:browser_major_version]			= user_agent.version.major
-				attributes[:browser_minor_version]			= user_agent.version.minor
-				attributes[:operating_system_name]			= user_agent.os.name
+				attributes[:browser_major_version]			= user_agent.version.try(:major)
+				attributes[:browser_minor_version]			= user_agent.version.try(:minor)
+				attributes[:operating_system_name]			= user_agent.os.try(:name)
 				attributes[:operating_system_version]		= user_agent.os.version
-				attributes[:operating_system_major_version]	= user_agent.os.version.major
-				attributes[:operating_system_minor_version]	= user_agent.os.version.minor
-				attributes[:device_type]					= 'tablet' if browser.device.tablet?
-				attributes[:device_type]					= 'mobile' if browser.device.mobile?
-				attributes[:device_type]					= 'tv' if browser.device.tv?
+				attributes[:operating_system_major_version]	= user_agent.os.version.try(:major)
+				attributes[:operating_system_minor_version]	= user_agent.os.version.try(:minor)
+				attributes[:device_type]					= 'tablet' if browser.device.try(:tablet?)
+				attributes[:device_type]					= 'mobile' if browser.device.try(:mobile?)
+				attributes[:device_type]					= 'tv' if browser.device.try(:tv?)
 				attributes[:device_type]					= 'console' if browser.device.console?
-				attributes[:device_family]					= user_agent.device.family
-				attributes[:device_brand]					= user_agent.device.brand
-				attributes[:device_model]					= user_agent.device.model
+				attributes[:device_family]					= user_agent.device.try(:family)
+				attributes[:device_brand]					= user_agent.device.try(:brand)
+				attributes[:device_model]					= user_agent.device.try(:model)
 
 			end
 
