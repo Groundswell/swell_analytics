@@ -100,15 +100,21 @@ module SwellAnalytics
 			end
 
 			if attributes[:page_url].present?
-				uri = URI(attributes[:page_url])
-				attributes[:page_host] ||= uri.host
-				attributes[:page_path] ||= ( uri.query.present? ? "#{uri.path}?#{uri.query}" : uri.path )
+				begin
+					uri = URI(attributes[:page_url])
+					attributes[:page_host] ||= uri.host
+					attributes[:page_path] ||= ( uri.query.present? ? "#{uri.path}?#{uri.query}" : uri.path )
+				rescue URI::InvalidURIError => e
+				end
 			end
 
 			if attributes[:referrer_url].present?
-				uri = URI(attributes[:referrer_url])
-				attributes[:referrer_host] ||= uri.host
-				attributes[:referrer_path] ||= ( uri.query.present? ? "#{uri.path}?#{uri.query}" : uri.path )
+				begin
+					uri = URI(attributes[:referrer_url])
+					attributes[:referrer_host] ||= uri.host
+					attributes[:referrer_path] ||= ( uri.query.present? ? "#{uri.path}?#{uri.query}" : uri.path )
+				rescue URI::InvalidURIError => e
+				end
 			end
 
 			attributes[:properties] = options || {}
@@ -166,15 +172,21 @@ module SwellAnalytics
 			attributes[:landing_page_url] = options[:page_url]
 
 			if attributes[:landing_page_referrer_url].present?
-				uri = URI(attributes[:landing_page_referrer_url])
-				attributes[:landing_page_referrer_host] ||= uri.host
-				attributes[:landing_page_referrer_path] ||= ( uri.query.present? ? "#{uri.path}?#{uri.query}" : uri.path )
+				begin
+					uri = URI(attributes[:landing_page_referrer_url])
+					attributes[:landing_page_referrer_host] ||= uri.host
+					attributes[:landing_page_referrer_path] ||= ( uri.query.present? ? "#{uri.path}?#{uri.query}" : uri.path )
+				rescue URI::InvalidURIError => e
+				end
 			end
 
 			if attributes[:landing_page_url].present?
-				uri = URI(attributes[:landing_page_url])
-				attributes[:landing_page_host] ||= uri.host
-				attributes[:landing_page_path] ||= ( uri.query.present? ? "#{uri.path}?#{uri.query}" : uri.path )
+				begin
+					uri = URI(attributes[:landing_page_url])
+					attributes[:landing_page_host] ||= uri.host
+					attributes[:landing_page_path] ||= ( uri.query.present? ? "#{uri.path}?#{uri.query}" : uri.path )
+				rescue URI::InvalidURIError => e
+				end
 			end
 
 			attributes
