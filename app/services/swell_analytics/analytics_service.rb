@@ -52,7 +52,7 @@ module SwellAnalytics
 
 						data_layer_event_attributes = event_attributes.merge(
 							event_name: name,
-							event_group: event_group,
+							# event_group: event_group, #@todo
 							event_data: event_data
 						)
 
