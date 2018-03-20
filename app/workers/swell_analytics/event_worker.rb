@@ -19,6 +19,8 @@ module SwellAnalytics
 			rescue Exception => e
 				puts e
 
+				raise e if Rails.env.development?
+
 				begin
 					NewRelic::Agent.notice_error( e, custom_params: args )
 				rescue

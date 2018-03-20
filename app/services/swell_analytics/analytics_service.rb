@@ -50,14 +50,21 @@ module SwellAnalytics
 				row.each do |event_group,group_data|
 					group_data.each do |event_name,event_data|
 
-						data_layer_event_attributes = event_attributes.merge(
-							event_name: name,
-							# event_group: event_group, #@todo
-							# event_data: event_data
-						)
+						if event_data.is_a? Hash
 
-						data_layer_analytics_event = AnalyticsEvent.new( data_layer_event_attributes )
-						data_layer_analytics_event.save!
+							value = get_data_layer_value( event_group, event_name, event_data )
+							value = event_attributes[:value] if value.nil?
+
+							data_layer_event_attributes = event_attributes.merge(
+								event_name: event_name,
+								event_category: event_group,
+								value: value,
+							)
+
+							data_layer_analytics_event = AnalyticsEvent.new( data_layer_event_attributes )
+							data_layer_analytics_event.save!
+
+						end
 
 					end
 				end
@@ -67,6 +74,24 @@ module SwellAnalytics
 		end
 
 		protected
+
+		def get_data_layer_value( event_group, event_name, event_data )
+
+			if event_group == :ecommerce
+
+				if event_data[:actionField] && event_data[:actionField][:revenue]
+
+					value = ( event_data[:actionField][:revenue].to_f * 100 ).to_i
+
+				elsif event_data[:products] && ( prices = event_data[:products].collect{|prod| prod[:price] }.select(&:present?) ).present?
+
+					value = ( prices.collect(&:to_f).sum * 100 ).to_i
+
+				end
+
+			end
+
+		end
 
 		def get_event_attributes( name, options, analytics_session )
 			attributes = { event_name: name }
