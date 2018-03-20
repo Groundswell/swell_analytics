@@ -51,7 +51,7 @@ module SwellAnalytics
 					group_data.each do |event_name,event_data|
 
 						data_layer_event_attributes = event_attributes.merge(
-							event_name: name,
+							event_name: event_name,
 							# event_group: event_group, #@todo
 							# event_data: event_data
 						)
